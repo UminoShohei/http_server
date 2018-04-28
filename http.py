@@ -28,14 +28,10 @@ def listen():
         conn, address = connection.accept()
         pid = os.fork()
         data = conn.recv(2048)
-        print("data")
-        print(data)
         if data == ('close\r\n').encode('utf-8'):
             break
         elif data:
             res = response()
-            print("res")
-            print(res)
             conn.send(res.encode())
             conn.shutdown(1)
             conn.close()
