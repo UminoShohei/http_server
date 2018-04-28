@@ -3,7 +3,7 @@ import os
 
 
 def response():
-    html = '<h1>こんにちは!</h1>'
+    html = '<h1> helloworld </h1>'
     res = 'HTTP/1.0 200 OK\n\
 Content-Type: text/html\n\
 Server: hoge\n\
@@ -11,6 +11,11 @@ Content-Length: ' + str(len(html)) + '\n\
 \n\
 ' + html + '\n'
     return res
+
+
+def get_request():
+
+    return
 
 
 def listen():
@@ -22,19 +27,19 @@ def listen():
     while True:
         conn, address = connection.accept()
         pid = os.fork()
-        while True:
-            data = conn.recv(2048)
-            print(data)
-            if data == ('close\r\n').encode('utf-8'):
-                break
-            elif data:
-                res = response()
-                conn.send(res)
-        print("hoge")
-        conn.shutdown(1)
-        conn.close()
-        exit()
-
+        data = conn.recv(2048)
+        print("data")
+        print(data)
+        if data == ('close\r\n').encode('utf-8'):
+            break
+        elif data:
+            res = response()
+            print("res")
+            print(res)
+            conn.send(res.encode())
+            conn.shutdown(1)
+            conn.close()
+            exit()
 
 if __name__ == "__main__":
     try:
