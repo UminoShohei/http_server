@@ -1,6 +1,5 @@
 import socket
 import os
-import base64
 
 
 def response():
@@ -17,14 +16,15 @@ Content-Length: ' + str(len(html)) + '\n\
 def parse_request(request):
     req_list = request.split('\n')
     get_list = req_list[0].split(' ')
-    return get_list[1].split('/', 1)[1]
+    print(req_list)
+    path = get_list[1].split('/', 1)[1]
+    return path, get_list[0]
 
 
 def open_file(path):
     c_type = check_type(path)
     with open(path, 'rb') as f:
-        content = f.read()  # ファイル終端まで全て読んだデータを返す
-        # content = base64.b64encode(f.read())  # ファイル終端まで全て読んだデータを返す
+        content = f.read()
     return content, c_type
 
 
@@ -33,7 +33,7 @@ def check_type(path):
     return parse_path[1]
 
 
-def create_response(content, c_type):
+def create_response(content, c_type, method):
     if c_type == 'html':
         content_type = 'text/html'
     elif c_type == 'css':
@@ -47,8 +47,14 @@ def create_response(content, c_type):
     else:
         content_type = 'text/plain'
 
-    res = b'HTTP/1.0 200 OK\nContent-Type: ' + content_type.encode() + b'\nServer: hoge\nContent-Length: ' + str(len(content)).encode() + b'\n\n' + content
-    print(res)
+    if method == 'GET':
+        res = b'HTTP/1.0 200 OK\nContent-Type: ' + content_type.encode() + \
+            b'\nServer: hoge\nContent-Length: ' + \
+            str(len(content)).encode() + b'\n\n' + content
+    elif method == 'HEAD':
+        res = b'HTTP/1.0 200 OK\nContent-Type: ' + content_type.encode() + \
+            b'\nServer: hoge\nContent-Length: ' + \
+            str(len(content)).encode() + b'\n'
     return res
 
 
@@ -65,10 +71,10 @@ def listen():
         if data == ('close\r\n').encode('utf-8'):
             break
         elif data:
-            path = parse_request(data.decode())
+            path, method = parse_request(data.decode())
             print(path)
             content, c_type = open_file(path)
-            res = create_response(content, c_type)
+            res = create_response(content, c_type, method)
             conn.send(res)
             conn.shutdown(1)
             conn.close()
