@@ -1,5 +1,6 @@
 import socket
 import os
+import base64
 
 
 def response():
@@ -20,11 +21,11 @@ def parse_request(request):
 
 
 def open_file(path):
-    type = check_type(path)
-    f = open(path)
-    content = f.read()  # ファイル終端まで全て読んだデータを返す
-    f.close()
-    return content, type
+    c_type = check_type(path)
+    with open(path, 'rb') as f:
+        content = f.read()  # ファイル終端まで全て読んだデータを返す
+        # content = base64.b64encode(f.read())  # ファイル終端まで全て読んだデータを返す
+    return content, c_type
 
 
 def check_type(path):
@@ -32,23 +33,22 @@ def check_type(path):
     return parse_path[1]
 
 
-def create_response(content, type):
-    if type == 'html':
-        content_type = 'type/html'
-    elif type == 'css':
-        content_type = 'type/css'
-    elif type == 'jpg' | | type == 'jpeg':
+def create_response(content, c_type):
+    if c_type == 'html':
+        content_type = 'text/html'
+    elif c_type == 'css':
+        content_type = 'text/css'
+    elif c_type == 'jpg' or c_type == 'jpeg':
         content_type = 'image/jpeg'
-    elif type == 'png':
+    elif c_type == 'png':
         content_type = 'image/png'
-    elif type == 'js':
+    elif c_type == 'js':
         content_type = 'application/javascript'
-    res = 'HTTP/1.0 200 OK\n\
-Content-Type: ' + type + '\n\
-Server: hoge\n\
-Content-Length: ' + str(len(content)) + '\n\
-\n\
-' + content + '\n'
+    else:
+        content_type = 'text/plain'
+
+    res = b'HTTP/1.0 200 OK\nContent-Type: ' + content_type.encode() + b'\nServer: hoge\nContent-Length: ' + str(len(content)).encode() + b'\n\n' + content
+    print(res)
     return res
 
 
@@ -62,15 +62,14 @@ def listen():
         conn, address = connection.accept()
         os.fork()
         data = conn.recv(2048)
-        print(data)
         if data == ('close\r\n').encode('utf-8'):
             break
         elif data:
             path = parse_request(data.decode())
             print(path)
-            content = open_file(path)
-            res = create_response(content, type)
-            conn.send(res.encode())
+            content, c_type = open_file(path)
+            res = create_response(content, c_type)
+            conn.send(res)
             conn.shutdown(1)
             conn.close()
             exit()
