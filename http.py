@@ -12,7 +12,7 @@ def parse_request(request):
 
 
 def exist_file(path):
-    return os.path.exits(path)
+    return os.path.exists(path)
 
 
 def open_file(path):
@@ -23,10 +23,13 @@ def open_file(path):
 
 def check_type(path):
     parse_path = path.split('.', 1)
-    return parse_path[1]
+    if len(parse_path) > 1:
+        return parse_path[1]
+    else:
+        return
 
 
-def create_response(content, c_type, message, status="200"):
+def create_response(message, status="200", content=b" ", c_type=None):
     if c_type == 'html':
         content_type = 'text/html'
     elif c_type == 'css':
@@ -52,23 +55,34 @@ def listen():
     connection.listen(5)
     os.fork()
     while True:
-        conn, address = connection.accept()
-        os.fork()
-        data = conn.recv(2048)
-        if data == ('close\r\n').encode('utf-8'):
-            break
-        elif data:
-            path, method, c_type = parse_request(data.decode())
-            content = open_file(path)
-
-            if method == 'GET':
-                res = create_response(
-                    content=content, c_type=c_type, message="OK")
-            elif method == 'HEAD':
-                res = create_response(c_type=c_type, message="OK")
-            else:
-                res = create_response(
-                    c_type=c_type, status="405", message="Not Allowd")
+        try:
+            conn, address = connection.accept()
+            os.fork()
+            data = conn.recv(2048)
+            if data == ('close\r\n').encode('utf-8'):
+                break
+            elif data:
+                path, method, c_type = parse_request(data.decode())
+                if method != "GET" and method != "HEAD":
+                    res = create_response(
+                        c_type=c_type, status="405", message="Not Allowd")
+                elif exist_file(path):
+                    content = open_file(path)
+                    if method == 'GET':
+                        res = create_response(
+                            content=content, c_type=c_type, message="OK")
+                    elif method == 'HEAD':
+                        res = create_response(c_type=c_type, message="OK")
+                else:
+                    res = create_response(status="404", message="Not Found")
+                print(res)
+                conn.send(res)
+                conn.shutdown(1)
+                conn.close()
+                exit()
+        except:
+            res = create_response(
+                status="500", message="Internal Server Error")
             conn.send(res)
             conn.shutdown(1)
             conn.close()
