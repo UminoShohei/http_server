@@ -7,14 +7,18 @@ def parse_request(request):
     get_list = req_list[0].split(' ')
     print(req_list)
     path = get_list[1].split('/', 1)[1]
-    return path, get_list[0]
+    c_type = check_type(path)
+    return path, get_list[0], c_type
+
+
+def exist_file(path):
+    return os.path.exits(path)
 
 
 def open_file(path):
-    c_type = check_type(path)
     with open(path, 'rb') as f:
         content = f.read()
-    return content, c_type
+    return content
 
 
 def check_type(path):
@@ -22,7 +26,7 @@ def check_type(path):
     return parse_path[1]
 
 
-def create_response(content, c_type, method):
+def create_response(content, c_type, message, status="200"):
     if c_type == 'html':
         content_type = 'text/html'
     elif c_type == 'css':
@@ -35,15 +39,9 @@ def create_response(content, c_type, method):
         content_type = 'application/javascript'
     else:
         content_type = 'text/plain'
-
-    if method == 'GET':
-        res = b'HTTP/1.0 200 OK\nContent-Type: ' + content_type.encode() + \
-            b'\nServer: hoge\nContent-Length: ' + \
-            str(len(content)).encode() + b'\n\n' + content
-    elif method == 'HEAD':
-        res = b'HTTP/1.0 200 OK\nContent-Type: ' + content_type.encode() + \
-            b'\nServer: hoge\nContent-Length: ' + \
-            str(len(content)).encode() + b'\n'
+    res = b'HTTP/1.0 ' + status.encode() + b' ' + message.encode() + b'\nContent-Type: ' + content_type.encode() + \
+        b'\nServer: hoge\nContent-Length: ' + \
+        str(len(content)).encode() + b'\n\n' + content
     return res
 
 
@@ -60,10 +58,17 @@ def listen():
         if data == ('close\r\n').encode('utf-8'):
             break
         elif data:
-            path, method = parse_request(data.decode())
-            print(path)
-            content, c_type = open_file(path)
-            res = create_response(content, c_type, method)
+            path, method, c_type = parse_request(data.decode())
+            content = open_file(path)
+
+            if method == 'GET':
+                res = create_response(
+                    content=content, c_type=c_type, message="OK")
+            elif method == 'HEAD':
+                res = create_response(c_type=c_type, message="OK")
+            else:
+                res = create_response(
+                    c_type=c_type, status="405", message="Not Allowd")
             conn.send(res)
             conn.shutdown(1)
             conn.close()
