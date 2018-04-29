@@ -2,17 +2,6 @@ import socket
 import os
 
 
-def response():
-    html = '<h1> helloworld </h1>'
-    res = 'HTTP/1.0 200 OK\n\
-Content-Type: text/html\n\
-Server: hoge\n\
-Content-Length: ' + str(len(html)) + '\n\
-\n\
-' + html + '\n'
-    return res
-
-
 def parse_request(request):
     req_list = request.split('\n')
     get_list = req_list[0].split(' ')
