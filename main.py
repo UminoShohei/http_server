@@ -34,14 +34,11 @@ def main():
         except:
             res = response.ResponseGenerator(is_error=True)
             res.decied_response()
-            hoge = res.generate_response()
-            print(hoge)
             conn.send(res.generate_response())
             conn.shutdown(1)
             conn.close()
         if pid != 0:
             os.kill(pid, 9)
-            print(pid)
 
 
 if __name__ == "__main__":
